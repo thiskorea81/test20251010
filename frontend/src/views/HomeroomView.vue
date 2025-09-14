@@ -1,13 +1,33 @@
 <template>
-    <h2 style="margin:0 0 8px">담임학급</h2>
-  
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+      <h2 style="margin:0 0 8px">담임학급</h2>
+      <RouterLink class="btn" to="/admin">설정으로 가기</RouterLink>
+    </div>
+
     <div class="card" style="padding:12px;">
+      <!-- 상단 안내/검색 -->
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
         <input class="input" v-model="q" placeholder="이름/학번 검색" style="max-width:320px;">
-        <small style="color:var(--muted)">총 {{ filtered.length }}명</small>
+        <small style="color:var(--muted)">
+          {{
+            settings.hasHomeroom
+              ? `${settings.grade}학년 ${settings.classNo}반`
+              : '담임 학급 미설정'
+          }}
+          · 총 {{ filtered.length }}명
+        </small>
       </div>
-  
-      <table style="width:100%;border-collapse:collapse;">
+
+      <p v-if="!students.list.length" style="margin:8px 0;color:var(--muted);">
+        업로드된 학생이 없습니다. 관리자 페이지에서 CSV를 업로드하세요.
+      </p>
+      <p v-else-if="settings.hasHomeroom && !scoped.length" style="margin:8px 0;color:var(--muted);">
+        설정된 학급({{ settings.grade }}학년 {{ settings.classNo }}반)에 학생이 없습니다.
+      </p>
+
+      <!-- 명단 테이블 -->
+      <table v-if="filtered.length" style="width:100%;border-collapse:collapse;">
         <thead>
           <tr>
             <th class="th">학번</th>
@@ -30,36 +50,55 @@
             <td class="td">{{ s['성별'] }}</td>
             <td class="td">{{ s['연락처'] }}</td>
             <td class="td">
-              <RouterLink class="btn" :to="{ name:'student-detail', params:{ hakbun: s['학번'] } }">보기</RouterLink>
+              <button class="btn" @click="goDetail(s['학번'])">보기</button>
             </td>
           </tr>
         </tbody>
       </table>
-  
-      <p v-if="!students.list.length" style="margin-top:8px;color:var(--muted);">
-        업로드된 학생이 없습니다. 관리자 페이지에서 CSV를 업로드하세요.
-      </p>
+
+      <p v-else style="margin-top:8px;color:var(--muted);">표시할 학생이 없습니다.</p>
     </div>
-  </template>
-  
-  <script setup>
-  import { computed, ref } from 'vue'
-  import { useStudentsStore } from '@/stores/students'
-  
-  const students = useStudentsStore()
-  const q = ref('')
-  
-  const filtered = computed(() => {
-    const k = q.value.trim().toLowerCase()
-    if (!k) return students.list
-    return students.list.filter(s =>
-      String(s['학번']).toLowerCase().includes(k) ||
-      String(s['이름']).toLowerCase().includes(k)
-    )
-  })
-  </script>
-  
-  <style scoped>
-  .th, .td { padding:8px; border-bottom:1px solid var(--border); text-align:left; }
-  </style>
-  
+  </div>
+</template>
+
+<script setup>
+import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useStudentsStore } from '@/stores/students'
+import { useSettingsStore } from '@/stores/settings'
+
+const router = useRouter()
+const students = useStudentsStore()
+const settings = useSettingsStore()
+
+const q = ref('')
+
+// 담임 설정 적용된 범위
+const scoped = computed(() => {
+  if (!settings.hasHomeroom) return students.list
+  return students.list.filter(s =>
+    Number(s['학년']) === Number(settings.grade) &&
+    Number(s['반']) === Number(settings.classNo)
+  )
+})
+
+// 검색 필터
+const filtered = computed(() => {
+  const k = q.value.trim().toLowerCase()
+  const base = scoped.value
+  if (!k) return base
+  return base.filter(s =>
+    String(s['학번']).toLowerCase().includes(k) ||
+    String(s['이름']).toLowerCase().includes(k)
+  )
+})
+
+// 상세 이동(프로그램 내비게이션: 클릭막힘 문제 회피)
+function goDetail(hakbun) {
+  router.push({ name: 'student-detail', params: { hakbun } })
+}
+</script>
+
+<style scoped>
+.th, .td { padding:8px; border-bottom:1px solid var(--border); text-align:left; }
+</style>
