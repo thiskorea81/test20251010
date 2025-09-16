@@ -96,9 +96,13 @@ const students = useStudentsStore()
 const att = useAttendanceStore()
 
 /* 학생 조회: 학생개인번호 기준 */
-const student = computed(() =>
-  students.list.find(s => String(s['학생개인번호']) === String(props.hakbun))
-)
+const student = computed(() => {
+   const id = String(props.hakbun)
+   return students.list.find(s =>
+     String(s['학생개인번호'] || '') === id ||
+     String(s['학번'] || '') === id
+   )
+})
 
 /* 라벨: 성명 우선, 없으면 이름 */
 const studentLabel = computed(() => {

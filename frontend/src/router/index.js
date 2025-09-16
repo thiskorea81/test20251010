@@ -11,6 +11,8 @@ import StudentDetailView from '@/views/StudentDetailView.vue'
 import SubjectView from '@/views/SubjectView.vue'
 import TaskView from '@/views/TaskView.vue'
 import AdminView from '@/views/AdminView.vue'
+import ClubView from '@/views/ClubView.vue'
+import ClubActivityView from '@/views/ClubActivityView.vue'
 
 // 인증 스토어
 import { useAuthStore } from '@/stores/auth'
@@ -37,6 +39,8 @@ const router = createRouter({
         },
         { path: 'subject', name: 'subject', component: SubjectView },
         { path: 'task', name: 'task', component: TaskView },
+        { path: 'club', name: 'club', component: ClubView },
+        { path: 'club/activity/:id', name: 'club-activity', component: ClubActivityView },
         { path: 'admin', name: 'admin', component: AdminView },
       ],
     },

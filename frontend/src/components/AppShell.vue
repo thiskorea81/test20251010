@@ -31,6 +31,7 @@
         <button class="btn" @click="go('/diary')">다이어리</button>
         <button class="btn" @click="go('/homeroom')">담임학급</button>
         <button class="btn" @click="go('/subject')">교과</button>
+        <button class="btn" @click="go('/club')">동아리</button>
         <button class="btn" @click="go('/task')">업무</button>
       </aside>
   
