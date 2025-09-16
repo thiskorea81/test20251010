@@ -4,10 +4,9 @@
         <h2 style="margin:0">할 일</h2>
         <div class="card" style="padding:4px;">
           <nav style="display:flex;gap:4px;">
-            <button class="btn" :class="tab==='all'  ? 'primary' : ''" @click="tab='all'">전체</button>
             <button class="btn" :class="tab==='todo' ? 'primary' : ''" @click="tab='todo'">해야 할 일</button>
-            <!-- ✅ '한 일' → '완료' -->
-            <button class="btn" :class="tab==='done' ? 'primary' : ''" @click="tab='done'">완료</button>
+            <button class="btn" :class="tab==='done' ? 'primary' : ''" @click="tab='done'">✅완료</button>
+            <button class="btn" :class="tab==='all'  ? 'primary' : ''" @click="tab='all'">전체</button>
           </nav>
         </div>
       </header>
