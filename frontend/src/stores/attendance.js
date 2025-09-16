@@ -1,11 +1,11 @@
 import { defineStore } from 'pinia'
 
-// YYYY-MM (KST)
+// YYYY-MM
 function monthKey(dateStr) {
   if (!dateStr) return ''
   return dateStr.slice(0, 7)
 }
-// YYYY (KST)
+// YYYY
 function yearKey(dateStr) {
   if (!dateStr) return ''
   return dateStr.slice(0, 4)
@@ -23,10 +23,15 @@ export const useAttendanceStore = defineStore('attendance', {
     menstrualList: (s) => (hakbun) => (s.byStudent[hakbun]?.menstrual || []),
     expList: (s) => (hakbun) => (s.byStudent[hakbun]?.experiential || []),
 
-    // 월별 생리결석 사용 횟수
+    // (기존) subtype별 월 횟수 — 필요 시 통계용으로 유지
     menstrualCount: (s) => (hakbun, yyyymm, subtype) => {
       const list = s.byStudent[hakbun]?.menstrual || []
       return list.filter(r => monthKey(r.date) === yyyymm && r.subtype === subtype).length
+    },
+    // ✅ 월 전체 합계 (유형 무관 월 1회 제한용)
+    menstrualCountMonthAll: (s) => (hakbun, yyyymm) => {
+      const list = s.byStudent[hakbun]?.menstrual || []
+      return list.filter(r => monthKey(r.date) === yyyymm).length
     },
 
     // 연도별 체험학습 사용 일수 합계

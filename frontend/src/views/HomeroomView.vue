@@ -20,7 +20,7 @@
       </div>
 
       <p v-if="!students.list.length" style="margin:8px 0;color:var(--muted);">
-        업로드된 학생이 없습니다. 관리자 페이지에서 CSV를 업로드하세요.
+        업로드된 학생이 없습니다. 관리자 페이지에서 CSV/TSV를 업로드하세요.
       </p>
       <p v-else-if="settings.hasHomeroom && !scoped.length" style="margin:8px 0;color:var(--muted);">
         설정된 학급({{ settings.grade }}학년 {{ settings.classNo }}반)에 학생이 없습니다.
@@ -47,7 +47,8 @@
             <td class="td">{{ s['반'] }}</td>
             <td class="td">{{ s['번호'] }}</td>
             <td class="td">{{ s['이름'] }}</td>
-            <td class="td">{{ s['성별'] }}</td>
+            <!-- ✅ 성별 표준화 표시 -->
+            <td class="td">{{ normalizeGender(s['성별']) || '-' }}</td>
             <td class="td">{{ s['연락처'] }}</td>
             <td class="td">
               <button class="btn" @click="goDetail(s['학번'])">보기</button>
@@ -66,6 +67,7 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStudentsStore } from '@/stores/students'
 import { useSettingsStore } from '@/stores/settings'
+import { normalizeGender } from '@/utils/gender'
 
 const router = useRouter()
 const students = useStudentsStore()
@@ -93,7 +95,7 @@ const filtered = computed(() => {
   )
 })
 
-// 상세 이동(프로그램 내비게이션: 클릭막힘 문제 회피)
+// 상세 이동
 function goDetail(hakbun) {
   router.push({ name: 'student-detail', params: { hakbun } })
 }

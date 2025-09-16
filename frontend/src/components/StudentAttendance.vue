@@ -2,16 +2,14 @@
   <section class="card" style="padding:12px; display:grid; gap:12px;">
     <header style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
       <h3 style="margin:0;">출결 관리</h3>
-      <small style="color:var(--muted)">
-        {{ studentLabel }}
-      </small>
+      <small style="color:var(--muted)">{{ studentLabel }}</small>
     </header>
 
-    <!-- 생리결석 (여학생 전용: 월 1회씩) -->
+    <!-- 생리결석: 유형 무관 월 1회 -->
     <div class="card" style="padding:10px; display:grid; gap:8px;">
       <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
         <strong>생리결석</strong>
-        <small style="color:var(--muted)">여학생은 월별로 결석/조퇴/지각 각각 1회 가능</small>
+        <small style="color:var(--muted)">지각/조퇴/결석 구분 없이 <b>월 1회</b>만 기록</small>
       </div>
 
       <div v-if="isFemale" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
@@ -23,7 +21,7 @@
         </select>
         <input class="input" v-model="mNote" placeholder="비고(선택)" style="min-width:240px;" />
         <button class="btn primary" :disabled="!canAddMenstrual" @click="addMenstrual">추가</button>
-        <span v-if="!canAddMenstrual" class="pill warn">이번 달 해당 항목은 이미 1회 기록됨</span>
+        <span v-if="!canAddMenstrual" class="pill warn">이번 달 이미 1회 기록됨</span>
       </div>
       <p v-else style="color:var(--muted); margin:0;">여학생이 아닙니다.</p>
 
@@ -43,7 +41,7 @@
       <p v-else style="color:var(--muted); margin:0;">기록 없음</p>
     </div>
 
-    <!-- 체험학습 (국내 7일 / 국외 30일, 연 기준) -->
+    <!-- 체험학습 -->
     <div class="card" style="padding:10px; display:grid; gap:8px;">
       <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
         <strong>체험학습</strong>
@@ -89,9 +87,9 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useStudentsStore } from '@/stores/students'
+import { isFemaleValue } from '@/utils/gender'
 import { useAttendanceStore } from '@/stores/attendance'
 
-// props: 단일 학생 학번
 const props = defineProps({ hakbun: { type: [String, Number], required: true } })
 
 const students = useStudentsStore()
@@ -101,9 +99,9 @@ const student = computed(() => students.list.find(s => String(s['학번']) === S
 const studentLabel = computed(() =>
   student.value ? `${student.value['이름']} (${student.value['학번']})` : String(props.hakbun)
 )
-const isFemale = computed(() => (student.value?.['성별'] || '').includes('여'))
+const isFemale = computed(() => isFemaleValue(student.value?.['성별']))
 
-/* ===== 생리결석 ===== */
+/* ===== 생리결석 (월 1회, 유형 무관) ===== */
 const mDate = ref(new Date().toISOString().slice(0,10))
 const mSubtype = ref('absent')
 const mNote = ref('')
@@ -111,10 +109,9 @@ const mNote = ref('')
 const menstrual = computed(() => att.menstrualList(String(props.hakbun)))
 function subtypeLabel(s){ return s==='absent' ? '결석' : s==='early' ? '조퇴' : '지각' }
 const yyyymm = computed(() => mDate.value.slice(0,7))
-const canAddMenstrual = computed(() => {
-  if (!isFemale.value || !mDate.value) return false
-  return att.menstrualCount(String(props.hakbun), yyyymm.value, mSubtype.value) < 1
-})
+const usedMonthAll = computed(() => att.menstrualCountMonthAll(String(props.hakbun), yyyymm.value))
+const canAddMenstrual = computed(() => !!isFemale.value && !!mDate.value && usedMonthAll.value < 1)
+
 function addMenstrual(){
   if (!canAddMenstrual.value) return
   att.addMenstrual(String(props.hakbun), { date: mDate.value, subtype: mSubtype.value, note: mNote.value })
@@ -124,23 +121,20 @@ function removeMenstrual(id){ att.removeMenstrual(String(props.hakbun), id) }
 
 /* ===== 체험학습 ===== */
 const eDate = ref(new Date().toISOString().slice(0,10))
-const eType = ref('domestic') // domestic | overseas
+const eType = ref('domestic')
 const eDays = ref(1)
 const eNote = ref('')
 
 const exp = computed(() => att.expList(String(props.hakbun)))
 const yyyy = computed(() => eDate.value.slice(0,4))
-
 const usedDomestic = computed(() => att.expDaysUsed(String(props.hakbun), yyyy.value, 'domestic'))
 const usedOverseas = computed(() => att.expDaysUsed(String(props.hakbun), yyyy.value, 'overseas'))
 const remainDomestic = computed(() => Math.max(0, 7  - usedDomestic.value))
 const remainOverseas = computed(() => Math.max(0, 30 - usedOverseas.value))
-
 const canAddExp = computed(() => {
   const d = Number(eDays.value || 0)
   if (!eDate.value || d <= 0) return false
-  if (eType.value === 'domestic') return d <= remainDomestic.value
-  return d <= remainOverseas.value
+  return eType.value === 'domestic' ? d <= remainDomestic.value : d <= remainOverseas.value
 })
 function addExp(){
   if (!canAddExp.value) return
