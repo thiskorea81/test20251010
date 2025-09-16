@@ -10,8 +10,8 @@
       <label>학생
         <select class="input" v-model="hakbun" style="min-width:220px; margin-left:6px;">
           <option disabled value="">선택</option>
-          <option v-for="s in scoped" :key="s['학번']" :value="String(s['학번'])">
-            {{ s['이름'] }} ({{ s['학년'] }}-{{ s['반'] }}-{{ s['번호'] }}) · {{ s['학번'] }}
+          <option v-for="s in scoped" :key="s['학생개인번호']" :value="String(s['학생개인번호'])">
+            {{ s['이름'] }} ({{ s['학년'] }}-{{ s['반'] }}-{{ s['번호'] }}) · {{ s['학생개인번호'] }}
           </option>
         </select>
       </label>
@@ -123,7 +123,7 @@ const scoped = computed(() => {
 })
 
 const hakbun = ref('')
-const sel = computed(() => scoped.value.find(s => String(s['학번']) === hakbun.value))
+const sel = computed(() => scoped.value.find(s => String(s['학생개인번호']) === hakbun.value))
 const isFemale = computed(() => isFemaleValue(student.value?.['성별']))
 
 /* ===== 생리결석 (월 1회) ===== */
@@ -160,7 +160,7 @@ function addExp(){ if (canAddExp.value) { att.addExp(hakbun.value, { date: eDate
 function removeExp(id){ att.removeExp(hakbun.value, id) }
 
 /* 초기 선택 */
-watch(scoped, (list) => { if (!hakbun.value && list.length) hakbun.value = String(list[0]['학번']) }, { immediate: true })
+watch(scoped, (list) => { if (!hakbun.value && list.length) hakbun.value = String(list[0]['학생개인번호']) }, { immediate: true })
 </script>
 
 <style scoped>

@@ -1,9 +1,16 @@
 <template>
   <div>
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-      <h2 style="margin:0;">학생 상세</h2>
+      <h2 style="margin:0;">
+        학생 상세
+        <small v-if="stu" class="title-sub">
+          {{stu['학년']}}학년 {{stu['반']}}반 {{ stu['번호'] || stu['학번'] }}번 {{ (stu['성명'] || stu['이름']) }}
+        </small>
+      </h2>
       <div style="display:flex;gap:8px;">
-        <button class="btn" @click="toggleEdit" v-if="activeTab==='info'">{{ editing ? '수정 취소' : '정보 수정' }}</button>
+        <button class="btn" @click="toggleEdit" v-if="activeTab==='info' && stu">
+          {{ editing ? '수정 취소' : '정보 수정' }}
+        </button>
         <RouterLink class="btn" to="/homeroom">목록으로</RouterLink>
       </div>
     </div>
@@ -18,48 +25,31 @@
     <div style="margin-top:12px;">
       <!-- 기본정보 -->
       <div v-if="activeTab==='info'">
-        <div class="card" style="padding:16px;" v-if="stu">
-          <template v-if="!editing">
-            <dl style="display:grid;grid-template-columns:140px 1fr;row-gap:8px;column-gap:12px;margin:0;">
-              <dt class="muted">학번</dt><dd>{{ stu['학번'] }}</dd>
-              <dt class="muted">학년/반/번호</dt><dd>{{ stu['학년'] }}학년 {{ stu['반'] }}반 {{ stu['번호'] }}번</dd>
-              <dt class="muted">이름</dt><dd>{{ stu['이름'] }}</dd>
-              <dt class="muted">성별</dt><dd>{{ genderDisplay || '-' }}</dd>
-              <dt class="muted">연락처</dt><dd>{{ stu['연락처'] }}</dd>
-              <dt class="muted">보호자1연락처</dt><dd><span class="pill primary">{{ stu['보호자1연락처'] || '-' }}</span></dd>
-              <dt class="muted">보호자2연락처</dt><dd><span class="pill">{{ stu['보호자2연락처'] || '-' }}</span></dd>
-              <dt class="muted">주소</dt><dd>{{ stu['주소'] }}</dd>
-              <dt class="muted">비고</dt><dd>{{ stu['비고'] }}</dd>
-            </dl>
-          </template>
-          <template v-else>
-            <form @submit.prevent="save">
-              <div style="display:grid;grid-template-columns:140px 1fr;row-gap:10px;column-gap:12px;">
-                <label class="muted">학번</label><div>{{ form['학번'] }}</div>
-                <label class="muted">이름</label><input class="input" v-model="form['이름']" />
-                <label class="muted">학년</label><input class="input" type="number" min="1" max="6" v-model.number="form['학년']" />
-                <label class="muted">반</label><input class="input" type="number" min="1" max="15" v-model.number="form['반']" />
-                <label class="muted">번호</label><input class="input" type="number" min="1" max="99" v-model.number="form['번호']" />
-                <label class="muted">성별</label>
-                <select class="input" v-model="form['성별']"><option value="">선택</option><option>남</option><option>여</option></select>
-                <label class="muted">연락처</label><input class="input" v-model="form['연락처']" />
-                <label class="muted">보호자1연락처</label><input class="input" v-model="form['보호자1연락처']" />
-                <label class="muted">보호자2연락처</label><input class="input" v-model="form['보호자2연락처']" />
-                <label class="muted">주소</label><input class="input" v-model="form['주소']" />
-                <label class="muted">비고</label><textarea class="input" v-model="form['비고']" rows="3"></textarea>
-              </div>
-              <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
-                <button class="btn" type="button" @click="toggleEdit">취소</button>
-                <button class="btn primary" type="submit">저장</button>
-              </div>
-            </form>
-          </template>
+        <template v-if="stu">
+          <StudentBasicInfoCard
+            v-if="!editing"
+            :student="stu"
+            :monthLabel="monthLabel"
+            :menUsedAll="menUsedAll"
+            :menRemainAll="menRemainAll"
+            :usedDomestic="usedDomestic"
+            :remainDomestic="remainDomestic"
+            :usedOverseas="usedOverseas"
+            :remainOverseas="remainOverseas"
+          />
+          <div v-else class="card" style="padding:16px;">
+            <StudentEditForm :initial="form" @save="save" @cancel="toggleEdit" />
+          </div>
+        </template>
+        <div v-else class="card" style="padding:16px;">
+          <p>해당 학생을 찾을 수 없습니다. (학생개인번호 또는 학번 확인)</p>
+          <RouterLink class="btn" to="/homeroom">목록으로</RouterLink>
         </div>
       </div>
 
       <!-- 상담 -->
       <div v-if="activeTab==='counsel'">
-        <StudentCounsel :hakbun="String(route.params.hakbun)" />
+        <StudentCounsel :hakbun="paramId" />
       </div>
 
       <!-- 출결 -->
@@ -72,7 +62,7 @@
             <span class="pill ok">올해 국외: 남은 {{ remainOverseas }}/30 (사용 {{ usedOverseas }})</span>
           </div>
         </div>
-        <StudentAttendance :hakbun="String(route.params.hakbun)" />
+        <StudentAttendance :hakbun="paramId" />
       </div>
     </div>
   </div>
@@ -85,63 +75,80 @@ import { useStudentsStore } from '@/stores/students'
 import { useAttendanceStore } from '@/stores/attendance'
 import StudentCounsel from '@/components/StudentCounsel.vue'
 import StudentAttendance from '@/components/StudentAttendance.vue'
-import { normalizeGender } from '@/utils/gender'
+import StudentBasicInfoCard from '@/components/student/StudentBasicInfoCard.vue'
+import StudentEditForm from '@/components/student/StudentEditForm.vue'
 
 const route = useRoute()
 const students = useStudentsStore()
 const att = useAttendanceStore()
 
-const stu = computed(() => students.list.find(s => String(s['학번']) === String(route.params.hakbun)))
+/* 라우터 파라미터 */
+const paramId = computed(() => String(route.params.hakbun ?? ''))
 
-const genderDisplay = computed(() => normalizeGender(stu.value?.['성별']))
+/* 안전 조회: 학생개인번호 우선, 없으면 학번으로도 시도 */
+const stu = computed(() => {
+  const byPersonal = students.byId?.(paramId.value)
+  if (byPersonal) return byPersonal
+  return students.list.find(s =>
+    String(s['학생개인번호'] || '') === paramId.value ||
+    String(s['학번'] || '') === paramId.value
+  )
+})
 
 /* 탭 */
-const tabs = [{ key:'info', label:'기본정보' }, { key:'counsel', label:'상담' }, { key:'attendance', label:'출결' }]
+const tabs = [
+  { key:'info', label:'기본정보' },
+  { key:'counsel', label:'상담' },
+  { key:'attendance', label:'출결' }
+]
 const activeTab = ref('info')
 
-/* 편집 */
+/* 편집 상태 + 폼 데이터 */
 const editing = ref(false)
 const form = reactive({
-  학번:'', 학년:null, 반:null, 번호:null, 이름:'', 성별:'', 연락처:'',
-  보호자1연락처:'', 보호자2연락처:'', 주소:'', 비고:''
+  학생개인번호:'', 학년:null, 반:null, 번호:null, 성명:'', 성별:'', 생년월일:'',
+  연락처:'', 보호자1연락처:'', 보호자2연락처:'', 주소:'', 비고:''
 })
 watch(stu, s => {
-  if (s) Object.assign(form, {
-    학번: s['학번'], 학년: Number(s['학년']), 반: Number(s['반']), 번호: Number(s['번호']),
-    이름: s['이름'], 성별: s['성별'] || '', 연락처: s['연락처'] || '',
-    보호자1연락처: s['보호자1연락처'] || '', 보호자2연락처: s['보호자2연락처'] || '',
+  if (!s) return
+  Object.assign(form, {
+    학생개인번호: s['학생개인번호'] || s['학번'] || '',
+    학년: Number(s['학년']), 반: Number(s['반']), 번호: Number(s['번호']),
+    성명: s['성명'] || s['이름'] || '',
+    성별: s['성별'] || '', 생년월일: s['생년월일'] || '',
+    연락처: s['연락처'] || '',
+    보호자1연락처: s['보호자1연락처'] || '',
+    보호자2연락처: s['보호자2연락처'] || '',
     주소: s['주소'] || '', 비고: s['비고'] || ''
   })
 }, { immediate:true })
+
 function toggleEdit(){ editing.value = !editing.value }
-function save(){
-  if (!form['이름']) return alert('이름을 입력하세요.')
-  students.update(form['학번'], { ...form })
+function save(payload){
+  // 이름 호환 필드도 함께 갱신
+  students.update(payload['학생개인번호'], { ...payload, 이름: payload['성명'] })
   editing.value = false
   alert('저장되었습니다.')
 }
 
-/* 출결 요약 (월 1회) */
+/* 출결 요약 (월 1회 규칙) */
 const today = new Date()
 const yyyy = String(today.getFullYear())
 const yyyymm = `${yyyy}-${String(today.getMonth()+1).padStart(2,'0')}`
 const monthLabel = `${yyyy}.${String(today.getMonth()+1).padStart(2,'0')}`
 
-const menUsedAll = computed(() => att.menstrualCountMonthAll(String(route.params.hakbun), yyyymm))
+const menUsedAll = computed(() => att.menstrualCountMonthAll(paramId.value, yyyymm))
 const menRemainAll = computed(() => Math.max(0, 1 - (menUsedAll.value || 0)))
-
-const usedDomestic = computed(() => att.expDaysUsed(String(route.params.hakbun), yyyy, 'domestic'))
-const usedOverseas = computed(() => att.expDaysUsed(String(route.params.hakbun), yyyy, 'overseas'))
+const usedDomestic = computed(() => att.expDaysUsed(paramId.value, yyyy, 'domestic'))
+const usedOverseas = computed(() => att.expDaysUsed(paramId.value, yyyy, 'overseas'))
 const remainDomestic = computed(() => Math.max(0, 7  - (usedDomestic.value || 0)))
 const remainOverseas = computed(() => Math.max(0, 30 - (usedOverseas.value || 0)))
-
 </script>
 
 <style scoped>
-.muted { color: var(--muted); }
 .pill { display:inline-block; padding:4px 8px; border:1px solid var(--border); border-radius:999px; background:#fff; font-size:13px; }
-.pill.primary { background:#f0f9ff; border-color:#bae6fd; font-weight:600; }
 .pill.ok { background:#ecfdf5; border-color:#a7f3d0; }
 .tab-btn { padding:6px 14px; border:1px solid var(--border); border-radius:6px; background:#f9fafb; cursor:pointer; }
 .tab-btn.active { background:#fff; border-color:#3b82f6; color:#1d4ed8; font-weight:600; }
+.title-sub { margin-left:8px; color: var(--muted); font-weight:600; }
 </style>

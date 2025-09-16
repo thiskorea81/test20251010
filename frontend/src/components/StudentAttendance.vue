@@ -95,14 +95,29 @@ const props = defineProps({ hakbun: { type: [String, Number], required: true } }
 const students = useStudentsStore()
 const att = useAttendanceStore()
 
-const student = computed(() => students.list.find(s => String(s['학번']) === String(props.hakbun)))
-const studentLabel = computed(() =>
-  student.value ? `${student.value['이름']} (${student.value['학번']})` : String(props.hakbun)
+/* 학생 조회: 학생개인번호 기준 */
+const student = computed(() =>
+  students.list.find(s => String(s['학생개인번호']) === String(props.hakbun))
 )
+
+/* 라벨: 성명 우선, 없으면 이름 */
+const studentLabel = computed(() => {
+  if (!student.value) return String(props.hakbun)
+  const name = student.value['성명'] || student.value['이름'] || ''
+  return `${name} (${student.value['학생개인번호']})`
+})
+
+/* 성별 판별 (혼합 입력 대응) */
 const isFemale = computed(() => isFemaleValue(student.value?.['성별']))
 
+/* 로컬(한국시간) YYYY-MM-DD 생성 */
+function toLocalDate(d = new Date()){
+  const dt = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+  return dt.toISOString().slice(0,10)
+}
+
 /* ===== 생리결석 (월 1회, 유형 무관) ===== */
-const mDate = ref(new Date().toISOString().slice(0,10))
+const mDate = ref(toLocalDate())
 const mSubtype = ref('absent')
 const mNote = ref('')
 
@@ -120,15 +135,15 @@ function addMenstrual(){
 function removeMenstrual(id){ att.removeMenstrual(String(props.hakbun), id) }
 
 /* ===== 체험학습 ===== */
-const eDate = ref(new Date().toISOString().slice(0,10))
+const eDate = ref(toLocalDate())
 const eType = ref('domestic')
 const eDays = ref(1)
 const eNote = ref('')
 
 const exp = computed(() => att.expList(String(props.hakbun)))
 const yyyy = computed(() => eDate.value.slice(0,4))
-const usedDomestic = computed(() => att.expDaysUsed(String(props.hakbun), yyyy.value, 'domestic'))
-const usedOverseas = computed(() => att.expDaysUsed(String(props.hakbun), yyyy.value, 'overseas'))
+const usedDomestic = computed(() => att.expDaysUsed(String(props.hakbun), yyyy.value, 'domestic') || 0)
+const usedOverseas = computed(() => att.expDaysUsed(String(props.hakbun), yyyy.value, 'overseas') || 0)
 const remainDomestic = computed(() => Math.max(0, 7  - usedDomestic.value))
 const remainOverseas = computed(() => Math.max(0, 30 - usedOverseas.value))
 const canAddExp = computed(() => {
