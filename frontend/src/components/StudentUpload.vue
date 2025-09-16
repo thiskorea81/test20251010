@@ -1,19 +1,18 @@
 <template>
   <section class="card" style="padding:16px;">
-    <h3 style="margin:0 0 12px;">학생 업로드 (TSV 전용)</h3>
+    <h3 style="margin:0 0 12px;">학생 업로드</h3>
 
     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-      <button type="button" class="btn" @click="openPicker">TSV 선택</button>
+      <button type="button" class="btn" @click="openPicker">엑셀 선택</button>
       <input
         ref="fileEl"
         type="file"
-        accept=".tsv,text/tab-separated-values"
+        accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
         @change="onFile"
         style="display:none"
       />
       <button type="button" class="btn" @click="onClear">전체 삭제</button>
-
-      <button type="button" class="btn" @click="downloadSampleTSV">샘플 TSV</button>
+      <button type="button" class="btn" @click="downloadSampleXLSX">샘플 엑셀</button>
 
       <small style="color:var(--muted)">
         총 {{ students.list.length }}명
@@ -46,12 +45,12 @@
 
 <script setup>
 import { ref } from 'vue'
-import Papa from 'papaparse'
+import * as XLSX from 'xlsx'
 import { useStudentsStore } from '@/stores/students'
 
 const students = useStudentsStore()
 
-// 새 양식 헤더(표시용)
+// 요구 스키마(표시/내보내기 순서)
 const headers = ref([
   '학년','반','번호','성명','학생개인번호','성별','생년월일','주소','비고','연락처','보호자1연락처','보호자2연락처'
 ])
@@ -66,44 +65,59 @@ function openPicker() {
 
 function onFile(e) {
   const file = e.target.files?.[0]
+  e.target.value = ''
   if (!file) return
   error.value = ''
   parsedInfo.value = ''
 
   const name = file.name.toLowerCase()
-  if (!name.endsWith('.tsv')) {
-    error.value = 'TSV 파일만 업로드할 수 있습니다. (확장자 .tsv)'
-    e.target.value = ''
+  const ok = name.endsWith('.xlsx') || name.endsWith('.xls')
+  if (!ok) {
+    error.value = '엑셀(.xlsx/.xls) 파일만 업로드할 수 있습니다.'
     return
   }
 
-  Papa.parse(file, {
-    header: true,
-    skipEmptyLines: true,
-    delimiter: '\t',      // ✅ TSV 강제
-    quotes: false,
-    complete: (result) => {
-      try {
-        if (result.errors?.length) {
-          error.value = '파싱 오류: ' + result.errors[0].message
-          return
+  const reader = new FileReader()
+  reader.onerror = () => { error.value = '파일을 읽는 중 오류가 발생했습니다.' }
+  reader.onload = (ev) => {
+    try {
+      const data = new Uint8Array(ev.target.result)
+      const wb = XLSX.read(data, { type: 'array' })
+      const wsName = wb.SheetNames[0]
+      if (!wsName) { error.value = '시트를 찾을 수 없습니다.'; return }
+      const ws = wb.Sheets[wsName]
+      const json = XLSX.utils.sheet_to_json(ws, { defval: '' }) // [{...row}]
+
+      if (!json.length) { error.value = '시트에 데이터가 없습니다.'; return }
+
+      // 엑셀에서 들어온 열들
+      const excelHeaders = Object.keys(json[0])
+
+      // 우리 스키마에 맞춰 매핑(없으면 빈문자)
+      const rows = json.map(r => {
+        const o = {}
+        for (const h of headers.value) {
+          // 엑셀에서 같은 이름 열이 있으면 사용, 없으면 빈칸
+          o[h] = (r[h] ?? '').toString().trim()
         }
-        const fields = result.meta?.fields?.length ? result.meta.fields : headers.value
-        const rows = (result.data || []).map(r => {
-          const o = {}
-          fields.forEach(h => { o[h] = (r[h] ?? '').toString().trim() })
-          return o
-        })
-        students.addMany(rows)
-        parsedInfo.value = `TSV(탭) · ${rows.length}행`
-      } catch (err) {
-        console.error(err)
-        error.value = '업로드 중 오류가 발생했습니다.'
-      } finally {
-        e.target.value = ''
+        return o
+      })
+
+      // 학생 스토어로 반영
+      students.addMany(rows)
+      parsedInfo.value = `엑셀 · ${rows.length}행 (${wsName})`
+
+      // 스키마 누락 경고(정보성)
+      const missing = headers.value.filter(h => !excelHeaders.includes(h))
+      if (missing.length) {
+        console.warn('누락된 열:', missing.join(', '))
       }
+    } catch (err) {
+      console.error(err)
+      error.value = '엑셀을 파싱하는 중 오류가 발생했습니다.'
     }
-  })
+  }
+  reader.readAsArrayBuffer(file)
 }
 
 function onClear() {
@@ -111,27 +125,27 @@ function onClear() {
   parsedInfo.value = ''
 }
 
-/* ========= 샘플 ========= */
+/* ========= 샘플(엑셀) ========= */
 function sampleRows() {
   return [
     { 학년:1, 반:1, 번호:1, 성명:'김서윤', 학생개인번호:'A20250001', 성별:'여', 생년월일:'2014-03-02',
       주소:'충북 청주시 상당구 예시로 10, 101호', 비고:'', 연락처:'010-1234-5678', 보호자1연락처:'010-1111-2222', 보호자2연락처:'010-2222-3333' },
-    { 학년:1, 반:2, 번호:2, 성명:'이도윤', 학생개인번호:'A20250002', 성별:'남', 생년월일:'2014-05-11',
+    { 학년:1, 반:1, 번호:2, 성명:'이도윤', 학생개인번호:'A20250002', 성별:'남', 생년월일:'2014-05-11',
       주소:'충북 청주시 서원구 샘플길 25', 비고:'알레르기 있음', 연락처:'010-2222-3333', 보호자1연락처:'010-3333-4444', 보호자2연락처:'010-4444-5555' },
   ]
 }
-
-function toTSV(rows) {
+function downloadSampleXLSX(){
   const cols = headers.value
-  const esc = v => (v ?? '').toString().replaceAll('\t',' ').replaceAll('\n',' ')
-  const lines = [cols.join('\t')]
-  for (const r of rows) lines.push(cols.map(c => esc(r[c])).join('\t'))
-  return lines.join('\n')
+  const data = [cols, ...sampleRows().map(r => cols.map(c => r[c] ?? ''))]
+  const ws = XLSX.utils.aoa_to_sheet(data)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, '학생업로드샘플')
+  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
+  const blob = new Blob([wbout], { type: 'application/octet-stream' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = '학생업로드_샘플.xlsx'
+  a.click()
+  URL.revokeObjectURL(a.href)
 }
-function download(data, type, name) {
-  const url = URL.createObjectURL(new Blob([data], { type }))
-  const a = document.createElement('a'); a.href = url; a.download = name; a.click()
-  URL.revokeObjectURL(url)
-}
-function downloadSampleTSV(){ download(toTSV(sampleRows()), 'text/tab-separated-values;charset=utf-8', '학생업로드_샘플.tsv') }
 </script>
