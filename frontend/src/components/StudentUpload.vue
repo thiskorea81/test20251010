@@ -1,6 +1,6 @@
 <template>
   <section class="card" style="padding:16px;">
-    <h3 style="margin:0 0 12px;">학생 업로드</h3>
+    <h3 style="margin:0 0 12px;">학생 업로드(NEIS 학생명렬표-선택(학생개인번호, 성별, 생년월일, 주소))</h3>
 
     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
       <button type="button" class="btn" @click="openPicker">엑셀 선택</button>
