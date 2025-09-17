@@ -63,7 +63,7 @@
   import FormInput from '@/components/FormInput.vue'
   
   const diary = useDiaryStore()
-  const tab = ref('all') // 기본 탭은 전체
+  const tab = ref('todo') // 기본 탭은 전체
   const text = ref('')
   const q = ref('')
   
