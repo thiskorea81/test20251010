@@ -4,6 +4,7 @@
       <h2 style="margin:0;">동아리 업무 노트</h2>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <small v-if="savedText" style="color:var(--muted)">{{ savedText }}</small>
+        <BtnLink :to="'/club/budget'">예산 관리</BtnLink>
         <BtnLink :to="'/club'">동아리 명단</BtnLink>
       </div>
     </div>
@@ -44,6 +45,16 @@
         <h3 style="margin:0 0 8px;">공지 · 연락</h3>
         <textarea class="input" rows="12" v-model="notice" @input="onInput('notice', notice)"
                   placeholder="가정통신문/알림문 초안, 메시지 문구, 전달 일정 등"></textarea>
+      </div>
+
+      <!-- 예산 메모 -->
+      <div v-else-if="active==='budget'" class="pane">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <h3 style="margin:0;">예산 메모</h3>
+          <BtnLink :to="'/club/budget'">예산 상세 관리로 이동</BtnLink>
+        </div>
+        <textarea class="input" rows="12" v-model="budgetMemo" @input="onInput('budget', budgetMemo)"
+                  placeholder="총예산 배분, 집행 원칙, 정산 메모 등을 자유롭게 적어두세요."></textarea>
       </div>
 
       <!-- 체크리스트 -->
@@ -90,6 +101,7 @@ const tabs = [
   { key:'schedule', label:'일정 메모' },
   { key:'minutes',  label:'회의록' },
   { key:'notice',   label:'공지 · 연락' },
+  { key:'budget',   label:'예산 메모' },
   { key:'tasks',    label:'체크리스트' },
 ]
 const active = ref('plan')
@@ -97,12 +109,12 @@ const active = ref('plan')
 onMounted(() => { notes.init() })
 
 /* 바인딩 */
-const plan = ref(''); const schedule = ref(''); const minutes = ref(''); const notice = ref('')
+const plan = ref(''); const schedule = ref(''); const minutes = ref(''); const notice = ref(''); const budgetMemo = ref('')
 const tasks = ref([]); const taskText = ref('')
 
 onMounted(() => {
   plan.value = notes.plan; schedule.value = notes.schedule
-  minutes.value = notes.minutes; notice.value = notes.notice
+  minutes.value = notes.minutes; notice.value = notes.notice; budgetMemo.value = notes.budget
   tasks.value = notes.tasks
 })
 

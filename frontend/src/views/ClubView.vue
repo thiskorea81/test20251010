@@ -5,6 +5,7 @@
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn" @click="downloadTemplate">샘플 템플릿 다운로드</button>
         <BtnLink :to="'/club/notes'">업무 노트</BtnLink>
+        <BtnLink :to="'/club/budget'">예산 관리</BtnLink>
         <button class="btn" @click="exportAllActivitiesCsv" :disabled="!hasAnyActivity">전체 활동 CSV</button>
         <button class="btn" @click="clearAll">초기화</button>
       </div>

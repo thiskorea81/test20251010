@@ -14,6 +14,7 @@ import AdminView from '@/views/AdminView.vue'
 import ClubView from '@/views/ClubView.vue'
 import ClubActivityView from '@/views/ClubActivityView.vue'
 import ClubNotesView from '@/views/ClubNotesView.vue'
+import ClubBudgetView from '@/views/ClubBudgetView.vue'
 
 // 인증 스토어
 import { useAuthStore } from '@/stores/auth'
@@ -43,6 +44,7 @@ const router = createRouter({
         { path: 'club', name: 'club', component: ClubView },
         { path: 'club/activity/:id', name: 'club-activity', component: ClubActivityView },
         { path: 'club/notes', name: 'club-notes', component: ClubNotesView },
+        { path: 'club/budget', name: 'club-budget', component: ClubBudgetView },
         { path: 'admin', name: 'admin', component: AdminView },
       ],
     },

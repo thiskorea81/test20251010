@@ -12,6 +12,7 @@ export const useClubNotesStore = defineStore('clubNotes', {
     schedule: '',   // 일정 메모
     minutes: '',    // 회의록
     notice: '',     // 공지/연락
+    budget: '',     // 예산 메모
     tasks: [],      // {id, text, done}
     savedAt: null,  // ISO string
   }),
@@ -47,7 +48,8 @@ export const useClubNotesStore = defineStore('clubNotes', {
       this.savedAt = new Date().toISOString()
       localStorage.setItem(KEY, JSON.stringify({
         plan: this.plan, schedule: this.schedule, minutes: this.minutes,
-        notice: this.notice, tasks: this.tasks, savedAt: this.savedAt
+        notice: this.notice, budget: this.budget,
+        tasks: this.tasks, savedAt: this.savedAt,
       }))
     },
     clear() {
