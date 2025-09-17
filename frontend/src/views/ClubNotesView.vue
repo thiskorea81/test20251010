@@ -4,7 +4,7 @@
       <h2 style="margin:0;">동아리 업무 노트</h2>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <small v-if="savedText" style="color:var(--muted)">{{ savedText }}</small>
-        <RouterLink class="btn" to="/club">동아리 명단</RouterLink>
+        <BtnLink :to="'/club'">동아리 명단</BtnLink>
       </div>
     </div>
 
@@ -81,6 +81,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useClubNotesStore } from '@/stores/clubNotes'
+import BtnLink from '@/components/BtnLink.vue'
 
 const notes = useClubNotesStore()
 
