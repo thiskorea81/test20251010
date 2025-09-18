@@ -1,5 +1,7 @@
+<!-- src/views/TaskView.vue -->
 <template>
   <div>
+    <!-- 헤더 -->
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
       <h2 style="margin:0;">업무</h2>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
@@ -15,9 +17,11 @@
 
     <!-- 업무 탭 -->
     <nav v-else style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;">
-      <button v-for="w in workNames" :key="w"
-              class="tab-btn" :class="{active: w===active}"
-              @click="active = w">
+      <button
+        v-for="w in workNames" :key="w"
+        class="tab-btn" :class="{active: w===active}"
+        @click="active = w"
+      >
         {{ w }}
       </button>
     </nav>
@@ -26,9 +30,11 @@
     <section v-if="active" class="card" style="padding:12px;margin-top:12px;display:grid;gap:12px;">
       <!-- 서브 탭 -->
       <nav style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button v-for="t in subTabs" :key="t.key"
-                class="tab-btn" :class="{active: t.key===sub}"
-                @click="sub=t.key">
+        <button
+          v-for="t in subTabs" :key="t.key"
+          class="tab-btn" :class="{active: t.key===sub}"
+          @click="sub=t.key"
+        >
           {{ t.label }}
         </button>
       </nav>
@@ -40,15 +46,20 @@
           <input class="input" v-model="tagText" placeholder="태그(쉼표/엔터)" style="max-width:260px;"
                  @keydown.enter.prevent="commitTag" @keydown="maybeCommitComma">
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            <span v-for="t in tags" :key="'t-'+t" class="chip">{{ t }} <button class="chip-x" @click="removeTag(t)">✕</button></span>
+            <span v-for="t in tags" :key="'t-'+t" class="chip">
+              {{ t }} <button class="chip-x" @click="removeTag(t)">✕</button>
+            </span>
           </div>
         </div>
+
         <textarea class="input" v-model="logText" rows="4" placeholder="업무 일지 내용을 입력하세요."></textarea>
+
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <button class="btn" @click="pickFiles">파일 첨부</button>
           <input ref="fileEl" type="file" multiple accept="image/*,application/pdf" @change="onFiles" style="display:none">
           <small style="color:var(--muted)">이미지/PDF 지원 · 브라우저 저장 한도 내</small>
         </div>
+
         <div v-if="files.length" style="display:flex;gap:8px;flex-wrap:wrap;">
           <div v-for="f in files" :key="f.id" class="card" style="padding:8px;">
             <template v-if="f.type.startsWith('image/')">
@@ -61,6 +72,7 @@
             </div>
           </div>
         </div>
+
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn primary" @click="saveLog">저장</button>
           <button class="btn" @click="resetLog">초기화</button>
@@ -95,25 +107,19 @@
         <p v-else style="color:var(--muted);margin:0;">아직 일지가 없습니다.</p>
       </div>
 
-      <!-- 2) 체크리스트 -->
+      <!-- 2) 체크리스트 (공용 컴포넌트 사용) -->
       <div v-else-if="sub==='tasks'" class="card" style="padding:10px;display:grid;gap:8px;">
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-          <input class="input" v-model="taskText" placeholder="할 일을 입력 후 Enter" @keydown.enter.prevent="addTask" style="min-width:260px;">
-          <button class="btn primary" @click="addTask">추가</button>
-          <button class="btn" @click="sortTasks">정렬(미완료 먼저)</button>
-          <button class="btn" @click="clearDone">완료 비우기</button>
-        </div>
-        <ul style="list-style:none;padding:0;margin:0;display:grid;gap:6px;">
-          <li v-for="t in tasks" :key="t.id" class="task">
-            <label style="display:flex;gap:8px;align-items:center;">
-              <input type="checkbox" v-model="t.done" @change="toggleTask(t.id)">
-              <span :style="{ textDecoration: t.done ? 'line-through' : 'none', color: t.done ? 'var(--muted)' : 'inherit' }">
-                {{ t.text }}
-              </span>
-            </label>
-            <button class="btn" @click="removeTask(t.id)">삭제</button>
-          </li>
-        </ul>
+        <Checklist
+          title="체크리스트"
+          :items="tasks"
+          :allowAdd="true"
+          placeholder="업무 할 일을 입력하세요"
+          @add="addTask"
+          @toggle="toggleTask"
+          @remove="removeTask"
+          @clearDone="clearDone"
+          @sort="sortTasks"
+        />
       </div>
 
       <!-- 3) 예산관리 -->
@@ -165,6 +171,7 @@
             <input class="input" v-model="eMemo" placeholder="내용" style="min-width:240px;">
             <button class="btn primary" @click="addEntry">추가</button>
           </div>
+
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <select class="input" v-model="filterCat" style="min-width:160px;">
               <option value="">세목 전체</option>
@@ -233,18 +240,22 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import BtnLink from '@/components/BtnLink.vue'
+import Checklist from '@/components/Checklist.vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useWorkStore } from '@/stores/work'
 
 const settings = useSettingsStore()
 const work = useWorkStore()
-onMounted(()=> work.init())
+
+onMounted(()=> work.init?.())
 
 /* 관리자 업무 목록 */
 const workNames = computed(()=>{
   const arr = Array.isArray(settings.works) ? settings.works : []
   return [...new Set(arr.map(s=>String(s||'').trim()).filter(Boolean))]
 })
+
+/* 활성 업무 */
 const active = ref('')
 watch(workNames,(arr)=>{
   if (!arr.length){ active.value=''; return }
@@ -272,7 +283,7 @@ const sub = ref('log')
 /* ===== 업무일지 ===== */
 function kstNowLocal(){
   const d=new Date(), z=d.getTimezoneOffset()
-  return new Date(d.getTime()-z*60000).toISOString().slice(0,16) // datetime-local
+  return new Date(d.getTime()-z*60000).toISOString().slice(0,16)
 }
 const logDt = ref(kstNowLocal())
 const logText = ref('')
@@ -313,15 +324,14 @@ function saveLog(){
 function editLog(r){
   logDt.value = r.datetime.replace(' ','T'); logText.value = r.content
   tags.value = [...(r.tags||[])]; files.value = [...(r.files||[])]
-  // 간단 모드: 수정 후 저장 누르면 새 로그 추가로 처리 (필요시 updateLog를 호출하도록 확장 가능)
+  // 필요시 updateLog 구현하여 연결 가능
 }
 function delLog(id){ if (!confirm('삭제할까요?')) return; work.removeLog(active.value, id) }
 function resetLog(){ logDt.value = kstNowLocal(); logText.value=''; tags.value=[]; tagText.value=''; files.value=[] }
 
-/* ===== 체크리스트 ===== */
+/* ===== 체크리스트(공용 컴포넌트) ===== */
 const tasks = computed(()=> work.listTasks(active.value))
-const taskText = ref('')
-function addTask(){ const t=taskText.value.trim(); if(!t) return; work.addTask(active.value, t); taskText.value='' }
+function addTask(text){ work.addTask(active.value, text) }
 function toggleTask(id){ work.toggleTask(active.value, id) }
 function removeTask(id){ work.removeTask(active.value, id) }
 function clearDone(){ work.clearDone(active.value) }
@@ -343,7 +353,10 @@ function removeCategory(id){
   if (!ok) alert('해당 세목의 내역이 있어 삭제할 수 없습니다.')
 }
 
-function today(){ const d=new Date(), z=d.getTimezoneOffset(); return new Date(d.getTime()-z*60000).toISOString().slice(0,10) }
+function today(){
+  const d=new Date(), z=d.getTimezoneOffset()
+  return new Date(d.getTime()-z*60000).toISOString().slice(0,10)
+}
 const eDate = ref(today())
 const eCat = ref('')
 const eType = ref('expense')
@@ -384,9 +397,7 @@ function exportBudgetCsv(){
 
 /* ===== 인수인계 ===== */
 const handoverText = ref('')
-watch(active, (w)=>{
-  handoverText.value = work.handover[w] || ''
-}, { immediate:true })
+watch(active, (w)=>{ handoverText.value = work.handover[w] || '' }, { immediate:true })
 function saveHandover(){ work.setHandover(active.value, handoverText.value) }
 function downloadHandover(){
   const name = `업무_${active.value}_인수인계_${yyyymmdd()}.txt`
@@ -400,17 +411,26 @@ function download(data, type, name){
   const blob=new Blob([data],{type}); const a=document.createElement('a')
   a.href=URL.createObjectURL(blob); a.download=name; a.click(); URL.revokeObjectURL(a.href)
 }
-function yyyymmdd(){ const d=new Date(), y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0'); return `${y}${m}${dd}` }
+function yyyymmdd(){
+  const d=new Date(), y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0')
+  return `${y}${m}${dd}`
+}
 </script>
 
 <style scoped>
-.tab-btn{ padding:6px 14px; border:1px solid var(--border); border-radius:6px; background:#f9fafb; cursor:pointer; }
-.tab-btn.active{ background:#fff; border-color:#3b82f6; color:#1d4ed8; font-weight:600; }
+.tab-btn{
+  padding:6px 14px; border:1px solid var(--border); border-radius:6px;
+  background:#f9fafb; cursor:pointer;
+}
+.tab-btn.active{
+  background:#fff; border-color:#3b82f6; color:#1d4ed8; font-weight:600;
+}
 .th,.td{ padding:8px; border-bottom:1px solid var(--border); text-align:left; vertical-align:top; }
-.chip{ display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border:1px solid var(--border);
-  border-radius:999px; background:#fff; font-size:12px; }
+.chip{
+  display:inline-flex; align-items:center; gap:6px; padding:4px 8px;
+  border:1px solid var(--border); border-radius:999px; background:#fff; font-size:12px;
+}
 .chip-x{ border:none; background:transparent; cursor:pointer; font-size:12px; }
-.task{ display:flex; justify-content:space-between; align-items:center; padding:8px; border:1px solid var(--border); border-radius:8px; background:#fff; }
 .pill{ display:inline-block; padding:4px 8px; border:1px solid var(--border); border-radius:999px; background:#fff; }
 .pill.ok{ background:#ecfdf5; border-color:#a7f3d0; }
 .pill.warn{ background:#fff7ed; border-color:#fed7aa; }
