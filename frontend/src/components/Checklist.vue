@@ -4,15 +4,15 @@
       <h3 v-if="title" style="margin:0">{{ title }}</h3>
       <div class="card" style="padding:4px;">
         <nav style="display:flex;gap:4px;">
-          <button class="btn" :class="tab==='todo' ? 'primary' : ''" @click="tab='todo'">해야할일</button>
-          <button class="btn" :class="tab==='done' ? 'primary' : ''" @click="tab='done'">완료</button>
-          <button class="btn" :class="tab==='all'  ? 'primary' : ''" @click="tab='all'">전체</button>
+          <button class="btn" :class="tab==='todo' ? 'primary' : ''" @click="tab='todo'">📌해야할일</button>
+          <button class="btn" :class="tab==='done' ? 'primary' : ''" @click="tab='done'">✅완료</button>
+          <button class="btn" :class="tab==='all'  ? 'primary' : ''" @click="tab='all'">📂전체</button>
         </nav>
       </div>
     </header>
 
     <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-      <input class="input" style="flex:1;min-width:220px" v-model="q" placeholder="할 일 검색 (내용 포함)" />
+      <input class="input" style="flex:1;min-width:220px" v-model="q" placeholder="✨할 일 검색 (내용 포함)" />
       <small style="color:var(--muted)">전체 {{ items.length }} · 해야 {{ items.filter(i=>!i.done).length }} · 완료 {{ items.filter(i=>i.done).length }}</small>
     </div>
 
