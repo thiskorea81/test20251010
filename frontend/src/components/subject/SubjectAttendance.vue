@@ -1,7 +1,7 @@
 <template>
   <section class="card" style="padding:12px;display:grid;gap:10px;">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-      <h3 style="margin:0;">출결 / 특이사항</h3>
+      <h3 style="margin:0;">출결</h3>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <button class="btn" @click="pick">엑셀 업로드</button>
         <input ref="fileEl" type="file"
@@ -19,7 +19,7 @@
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <strong>출석부</strong>
         <input class="input" type="date" v-model="date" />
-        <small style="color:var(--muted)">학생별 상태(출석/결석/지각/조퇴) 및 특이사항을 기록하세요.</small>
+        <small style="color:var(--muted)">학생별 상태(출석/결석/지각/조퇴)만 관리합니다. (특이사항은 ‘자세히’에서 기록)</small>
         <div style="margin-left:auto;display:flex;gap:8px;">
           <button class="btn" @click="clearDay" :disabled="!Object.keys(dayMap).length">해당일 비우기</button>
         </div>
@@ -33,8 +33,7 @@
             <th class="th">번호</th>
             <th class="th">성명</th>
             <th class="th">상태</th>
-            <th class="th">특이사항(태도/발표/참여/메모)</th>
-            <th class="th">저장</th>
+            <th class="th">자세히</th>
           </tr>
         </thead>
         <tbody>
@@ -53,23 +52,8 @@
                 <option value="early">조퇴</option>
               </select>
             </td>
-
-            <!-- ✅ 인라인 특이사항 입력 -->
             <td class="td">
-              <div style="display:grid;gap:6px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));align-items:center;">
-                <input class="input" :value="noteOf(r).attitude" placeholder="태도"
-                       @change="updateNote(r,'attitude',$event.target.value)" />
-                <input class="input" :value="noteOf(r).presentation" placeholder="발표"
-                       @change="updateNote(r,'presentation',$event.target.value)" />
-                <input class="input" :value="noteOf(r).participation" placeholder="참여"
-                       @change="updateNote(r,'participation',$event.target.value)" />
-              </div>
-              <textarea class="input" rows="2" :value="noteOf(r).memo" placeholder="기타 메모"
-                        style="margin-top:6px;"
-                        @change="updateNote(r,'memo',$event.target.value)"></textarea>
-            </td>
-            <td class="td" style="white-space:nowrap;">
-              <button class="btn" @click="saveNote(r)">저장</button>
+              <button class="btn" @click="goDetail(r)">자세히</button>
             </td>
           </tr>
         </tbody>
@@ -84,6 +68,9 @@
 import { ref, computed } from 'vue'
 import * as XLSX from 'xlsx'
 import { useSubjectsStore } from '@/stores/subjects'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 const props = defineProps({ subject: { type:String, required:true } })
 const store = useSubjectsStore()
 
@@ -99,26 +86,6 @@ const dayMap = computed(()=> store.dayMap(props.subject, date.value))
 const roster = computed(()=> store.roster(props.subject))
 function setStatus(id, status){ store.setStatus(props.subject, date.value, id, status) }
 function clearDay(){ if (confirm('해당 날짜의 출석을 모두 비울까요?')) store.clearDay(props.subject, date.value) }
-
-/* ==== 특이사항 (subjects.studentNotes) ==== */
-function noteOf(r){
-  const id = String(r['학생개인번호'])
-  return store.studentNote(props.subject, id) || { attitude:'', presentation:'', participation:'', memo:'' }
-}
-const editBuffer = new Map() // { studentId -> partial updates }
-function updateNote(r, key, val){
-  const id = String(r['학생개인번호'])
-  const base = { ...noteOf(r) }
-  base[key] = val
-  editBuffer.set(id, base)
-}
-function saveNote(r){
-  const id = String(r['학생개인번호'])
-  const payload = editBuffer.get(id) || noteOf(r)
-  store.setStudentNote(props.subject, id, payload)
-  editBuffer.delete(id)
-  alert('저장되었습니다.')
-}
 
 /* 엑셀 업로드 */
 const fileEl = ref(null)
@@ -222,6 +189,12 @@ function download(data, type, name){
   const blob = new Blob([data], { type })
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click()
   URL.revokeObjectURL(a.href)
+}
+
+/* 자세히(특이사항 전용 페이지로 이동) */
+function goDetail(r){
+  const id = String(r['학생개인번호'])
+  router.push({ name:'subject-student-note', params:{ subject: props.subject, id } })
 }
 </script>
 

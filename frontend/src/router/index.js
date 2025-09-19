@@ -40,6 +40,12 @@ const router = createRouter({
           props: true
         },
         { path: 'subject', name: 'subject', component: SubjectView },
+        {
+          path: 'subjects/:subject/student/:id',
+          name: 'subject-student-note',
+          component: () => import('@/views/SubjectStudentNoteView.vue'),
+          props: true,
+        },
         { path: 'task', name: 'task', component: TaskView },
         { path: 'club', name: 'club', component: ClubView },
         { path: 'club/activity/:id', name: 'club-activity', component: ClubActivityView },
